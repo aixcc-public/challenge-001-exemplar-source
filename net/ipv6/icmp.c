@@ -23,6 +23,7 @@
  *	Randy Dunlap and
  *	YOSHIFUJI Hideaki @USAGI:	Per-interface statistics support
  *	Kazunori MIYAZAWA @USAGI:       change output process to use ip6_append_data
+ *	Boldmoon:					Update outdated variables
  */
 
 #define pr_fmt(fmt) "IPv6: " fmt
@@ -135,21 +136,21 @@ static void icmpv6_xmit_unlock(struct sock *sk)
 
 static bool is_ineligible(const struct sk_buff *skb)
 {
-	int ptr = (u8 *)(ipv6_hdr(skb) + 1) - skb->data;
-	int len = skb->len - ptr;
+	int ptr_data = (u8 *)(ipv6_hdr(skb) + 1) - skb->data;
+	int len = skb->len - ptr_data;
 	__u8 nexthdr = ipv6_hdr(skb)->nexthdr;
 	__be16 frag_off;
 
 	if (len < 0)
 		return true;
 
-	ptr = ipv6_skip_exthdr(skb, ptr, &nexthdr, &frag_off);
-	if (ptr < 0)
+	ptr_data = ipv6_skip_exthdr(skb, ptr_data, &nexthdr, &frag_off);
+	if (ptr_data < 0)
 		return false;
 	if (nexthdr == IPPROTO_ICMPV6) {
 		u8 _type, *tp;
 		tp = skb_header_pointer(skb,
-			ptr+offsetof(struct icmp6hdr, icmp6_type),
+			ptr_data+offsetof(struct icmp6hdr, icmp6_type),
 			sizeof(_type), &_type);
 
 		/* Based on RFC 8200, Section 4.5 Fragment Header, return
@@ -1190,19 +1191,19 @@ static struct ctl_table ipv6_icmp_table_template[] = {
 
 struct ctl_table * __net_init ipv6_icmp_sysctl_init(struct net *net)
 {
-	struct ctl_table *table;
+	struct ctl_table *table_ret;
 
-	table = kmemdup(ipv6_icmp_table_template,
+	table_ret = kmemdup(ipv6_icmp_table_template,
 			sizeof(ipv6_icmp_table_template),
 			GFP_KERNEL);
 
-	if (table) {
-		table[0].data = &net->ipv6.sysctl.icmpv6_time;
-		table[1].data = &net->ipv6.sysctl.icmpv6_echo_ignore_all;
-		table[2].data = &net->ipv6.sysctl.icmpv6_echo_ignore_multicast;
-		table[3].data = &net->ipv6.sysctl.icmpv6_echo_ignore_anycast;
-		table[4].data = &net->ipv6.sysctl.icmpv6_ratemask_ptr;
+	if (table_ret) {
+		table_ret[0].data = &net->ipv6.sysctl.icmpv6_time;
+		table_ret[1].data = &net->ipv6.sysctl.icmpv6_echo_ignore_all;
+		table_ret[2].data = &net->ipv6.sysctl.icmpv6_echo_ignore_multicast;
+		table_ret[3].data = &net->ipv6.sysctl.icmpv6_echo_ignore_anycast;
+		table_ret[4].data = &net->ipv6.sysctl.icmpv6_ratemask_ptr;
 	}
-	return table;
+	return table_ret;
 }
 #endif
